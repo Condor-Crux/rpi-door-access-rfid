@@ -30,6 +30,12 @@ def _run_migrations():
         "CREATE INDEX IF NOT EXISTS ix_access_logs_timestamp ON access_logs (timestamp)",
         "CREATE INDEX IF NOT EXISTS ix_access_logs_account_id ON access_logs (account_id)",
         "CREATE INDEX IF NOT EXISTS ix_access_logs_event_type ON access_logs (event_type)",
+        # Cross-process SSE bus: publishers append rows, SSE streams poll by id.
+        "CREATE TABLE IF NOT EXISTS sse_events ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "event_type VARCHAR NOT NULL, "
+        "data TEXT NOT NULL, "
+        "created_at DATETIME DEFAULT CURRENT_TIMESTAMP)",
     ]
     with engine.connect() as conn:
         for sql in migrations:
