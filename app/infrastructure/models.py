@@ -38,6 +38,10 @@ class AccountModel(Base):
     expiration_date: Mapped[datetime.datetime] = mapped_column(DateTime)
     credits: Mapped[int] = mapped_column(Integer, default=0)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    # "particulares", "cuenta_corriente" or "ticket_carga"
+    key_type: Mapped[str] = mapped_column(String, default="particulares")
+    # Importe del ticket de carga, en pesos (solo aplica si key_type == "ticket_carga")
+    charge_value: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=None)
 
     user = relationship("UserModel")
 
