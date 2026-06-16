@@ -1,23 +1,11 @@
-<!-- Audit log table fragment — dense, single-line rows, icon-coded type -->
-{% set ICONS = {
-    'rfid.grant':      ['✓', 'bg-emerald-100 text-emerald-700 ring-emerald-200', 'Acceso concedido'],
-    'rfid.deny':       ['✕', 'bg-rose-100 text-rose-600 ring-rose-200', 'Acceso denegado'],
-    'user.created':    ['+', 'bg-sky-100 text-sky-700 ring-sky-200', 'Usuario creado'],
-    'user.deleted':    ['–', 'bg-slate-100 text-slate-500 ring-slate-200', 'Usuario eliminado'],
-    'company.created': ['+', 'bg-violet-100 text-violet-700 ring-violet-200', 'Empresa creada'],
-    'company.deleted': ['–', 'bg-slate-100 text-slate-500 ring-slate-200', 'Empresa eliminada'],
-    'card.created':    ['+', 'bg-cyan-100 text-cyan-700 ring-cyan-200', 'Tarjeta creada'],
-    'card.edited':     ['✎', 'bg-amber-100 text-amber-700 ring-amber-200', 'Tarjeta editada'],
-    'card.recharged':  ['↑', 'bg-teal-100 text-teal-700 ring-teal-200', 'Créditos recargados'],
-    'card.unlinked':   ['⊘', 'bg-orange-100 text-orange-700 ring-orange-200', 'Tarjeta desvinculada'],
-    'batch.blanquear': ['⊗', 'bg-rose-100 text-rose-600 ring-rose-200', 'Blanqueo de tarjetas'],
-} %}
+<!-- Audit log table fragment — dense rows, icon-coded type, click-to-expand.
+     The tbody is SSE-wired (sse-swap="audit"): every new audit entry is
+     prepended live. Re-rendered on filter, and the SSE ext re-registers it. -->
 <div class="bg-white border border-sky-100 rounded-2xl overflow-hidden shadow-sm">
     <div class="px-5 py-2.5 border-b border-sky-100 bg-sky-50/50">
         <p class="text-xs text-slate-500 font-medium">{{ total }} evento{{ 's' if total != 1 else '' }} encontrado{{ 's' if total != 1 else '' }}</p>
     </div>
 
-    {% if logs %}
     <div class="overflow-x-auto">
         <table class="w-full text-xs">
             <thead>
@@ -29,25 +17,19 @@
                     <th class="px-4 py-2">Detalle</th>
                 </tr>
             </thead>
-            <tbody id="logs-tbody" class="divide-y divide-sky-50">
-                {% for log in logs %}
-                {% set ic = ICONS.get(log.event_type, ['•', 'bg-slate-100 text-slate-500 ring-slate-200', log.event_type]) %}
-                <tr class="hover:bg-sky-50/50 transition-colors align-middle">
-                    <td class="px-4 py-1.5 font-mono whitespace-nowrap align-middle leading-none">
-                        <span class="text-slate-400">{{ log.timestamp.strftime('%Y-%m-%d') }}</span>
-                        <span class="text-slate-600 font-medium">{{ log.timestamp.strftime('%H:%M') }}</span><span class="text-slate-400">:{{ log.timestamp.strftime('%S') }}</span>
-                    </td>
-                    <td class="px-2 py-1.5 text-center align-middle">
-                        <span title="{{ ic[2] }}"
-                              class="inline-flex h-5 w-5 items-center justify-center rounded-full ring-1 ring-inset text-xs font-bold leading-none {{ ic[1] }}">{{ ic[0] }}</span>
-                    </td>
-                    <td class="px-3 py-1.5 align-middle whitespace-nowrap">
-                        <span class="{{ 'text-slate-600 font-medium' if log.actor == 'admin' else 'text-slate-400' }}">{{ log.actor }}</span>
-                    </td>
-                    <td class="px-3 py-1.5 align-middle whitespace-nowrap font-mono text-slate-700">{{ log.objeto }}</td>
-                    <td class="px-4 py-1.5 align-middle text-slate-500">{{ log.detalle }}</td>
-                </tr>
+            <tbody id="logs-tbody" class="divide-y divide-sky-50"
+                   sse-swap="audit" hx-swap="afterbegin">
+                {% for e in logs %}
+                {% include "_log_row.html" %}
                 {% endfor %}
+
+                {% if not logs %}
+                <tr data-log-empty>
+                    <td colspan="5" class="px-5 py-10 text-center text-sm text-slate-400">
+                        No hay registros que coincidan con los filtros.
+                    </td>
+                </tr>
+                {% endif %}
 
                 {% if has_more %}
                 <tr id="load-more-row">
@@ -65,9 +47,4 @@
             </tbody>
         </table>
     </div>
-    {% else %}
-    <div class="px-5 py-10 text-center text-sm text-slate-400">
-        No hay registros que coincidan con los filtros.
-    </div>
-    {% endif %}
 </div>

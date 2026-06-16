@@ -13,6 +13,7 @@ from app.core.security import get_current_admin, get_current_admin_cookie
 from app.core.time import utcnow
 from app.core.audit import log_audit
 from app.api.stats import compute_kpi
+from app.api.logs import build_logs_context
 
 router = APIRouter()
 templates = make_templates()
@@ -78,6 +79,8 @@ def index(request: Request, db: Session = Depends(get_db), admin: str = Depends(
         "users": users,
         "companies": companies,
         "kpi": kpi,
+        # Seed the dashboard's live log with the most recent entries.
+        **build_logs_context(db),
     })
 
 
@@ -124,13 +127,6 @@ def ui_create_account(
                   {"account_id": account_id, "status": status, "credits": credits,
                    "expiration_date": exp_date_obj.isoformat(), "user_id": user_id,
                    "key_type": key_type, "invoice_number": invoice_number})
-        broadcaster.publish("account_created", {
-            "account_id": account.account_id,
-            "status": account.status,
-            "credits": account.credits,
-            "expiration_date": account.expiration_date.isoformat(),
-            "timestamp": utcnow().isoformat(),
-        })
     else:
         # Update existing card's user assignment
         if user_id is not None:
@@ -201,12 +197,6 @@ def ui_recharge_account(
               f"Créditos recargados: tarjeta {account_id} (+{amount}, total {account.credits})",
               {"account_id": account_id, "amount": amount,
                "credits_before": prev_credits, "credits_after": account.credits})
-    broadcaster.publish("account_recharged", {
-        "account_id": account.account_id,
-        "credits": account.credits,
-        "delta": amount,
-        "timestamp": utcnow().isoformat(),
-    })
 
     if request.headers.get("HX-Request"):
         # If called from user detail panel, return updated panel
@@ -322,15 +312,10 @@ def ui_blanquear(
 def _render_event_html(event_name: str, data: dict) -> str | None:
     if event_name == "kpi":
         return templates.get_template("_kpi_cards.html").render(kpi=data)
-    if event_name == "swipe":
-        view = data
-    elif event_name in ("account_created", "account_recharged"):
-        view = {**data, "event_type": event_name}
-    else:
-        return None
-    ts = view.get("timestamp", "")
-    view["timestamp_short"] = ts[11:19] if len(ts) >= 19 else ""
-    return templates.get_template("_event_item.html").render(e=view)
+    if event_name == "audit":
+        # `data` is already an enrich_log() dict — render one log row.
+        return templates.get_template("_log_row.html").render(e=data)
+    return None
 
 
 def _sse_format(event_name: str, html: str) -> str:
