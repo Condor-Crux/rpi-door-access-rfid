@@ -122,7 +122,8 @@ def ui_create_account(
         log_audit(db, "card.created", "admin",
                   f"Tarjeta creada: {account_id}" + (f" → usuario #{user_id}" if user_id else ""),
                   {"account_id": account_id, "status": status, "credits": credits,
-                   "expiration_date": exp_date_obj.isoformat(), "user_id": user_id})
+                   "expiration_date": exp_date_obj.isoformat(), "user_id": user_id,
+                   "key_type": key_type, "invoice_number": invoice_number})
         broadcaster.publish("account_created", {
             "account_id": account.account_id,
             "status": account.status,
@@ -251,7 +252,8 @@ def ui_edit_account(
     log_audit(db, "card.edited", "admin",
               f"Tarjeta editada: {account_id} — estado={status}, créditos={credits}",
               {"account_id": account_id, "status": status, "credits": credits,
-               "expiration_date": account.expiration_date.isoformat()})
+               "expiration_date": account.expiration_date.isoformat(),
+               "key_type": key_type, "invoice_number": account.invoice_number})
 
     if request.headers.get("HX-Request") and account.user_id:
         user, accounts = _user_with_accounts(db, account.user_id)
