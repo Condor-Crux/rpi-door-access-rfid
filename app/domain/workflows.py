@@ -37,7 +37,8 @@ def grant_access(db: Session, account: AccountModel, green_led: LedIndicator, bu
     log_access(db, account.account_id, "grant")
     log_audit(db, "rfid.grant", "system",
               f"Acceso concedido — tarjeta {account.account_id}",
-              {"account_id": account.account_id, "credits_remaining": account.credits})
+              {"account_id": account.account_id, "credits_remaining": account.credits,
+               "key_type": getattr(account, "key_type", None)})
     broadcaster.publish("swipe", {
         "account_id": account.account_id,
         "event_type": "grant",

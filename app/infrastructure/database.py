@@ -25,6 +25,8 @@ def _run_migrations():
         "ALTER TABLE users ADD COLUMN document_number VARCHAR",
         "ALTER TABLE users ADD COLUMN nationality VARCHAR DEFAULT 'AR'",
         "ALTER TABLE companies ADD COLUMN deleted_at DATETIME",
+        "ALTER TABLE accounts ADD COLUMN key_type VARCHAR DEFAULT 'particulares'",
+        "ALTER TABLE accounts ADD COLUMN invoice_number INTEGER",
         "CREATE INDEX IF NOT EXISTS ix_access_logs_timestamp ON access_logs (timestamp)",
         "CREATE INDEX IF NOT EXISTS ix_access_logs_account_id ON access_logs (account_id)",
         "CREATE INDEX IF NOT EXISTS ix_access_logs_event_type ON access_logs (event_type)",

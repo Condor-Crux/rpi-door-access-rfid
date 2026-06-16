@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, Response
 from app.core.templates import make_templates
 from sqlalchemy.orm import Session, joinedload
-from typing import List
+from typing import List, Optional
 import datetime
 
 from app.infrastructure.database import get_db
@@ -33,7 +33,9 @@ def create_account(account: Account, db: Session = Depends(get_db), admin: str =
         account_id=account.account_id,
         status=account.status,
         expiration_date=account.expiration_date,
-        credits=account.credits
+        credits=account.credits,
+        key_type=account.key_type,
+        invoice_number=account.invoice_number if account.key_type == "ticket_carga" else None,
     )
     db.add(new_account)
     db.commit()
@@ -87,6 +89,8 @@ def ui_create_account(
     expiration_date: str = Form(...),
     credits: int = Form(...),
     user_id: int = Form(None),
+    key_type: str = Form("particulares"),
+    invoice_number: Optional[int] = Form(None),
     db: Session = Depends(get_db),
     admin: str = Depends(get_current_admin_cookie)
 ):
@@ -97,6 +101,8 @@ def ui_create_account(
     except ValueError:
         exp_date_obj = utcnow() + datetime.timedelta(hours=24)
 
+    invoice_number = invoice_number if key_type == "ticket_carga" else None
+
     account = db.query(AccountModel).filter(AccountModel.account_id == account_id).first()
     created = False
     if not account:
@@ -106,6 +112,8 @@ def ui_create_account(
             expiration_date=exp_date_obj,
             credits=credits,
             user_id=user_id,
+            key_type=key_type,
+            invoice_number=invoice_number,
         )
         db.add(account)
         db.commit()
@@ -114,7 +122,8 @@ def ui_create_account(
         log_audit(db, "card.created", "admin",
                   f"Tarjeta creada: {account_id}" + (f" → usuario #{user_id}" if user_id else ""),
                   {"account_id": account_id, "status": status, "credits": credits,
-                   "expiration_date": exp_date_obj.isoformat(), "user_id": user_id})
+                   "expiration_date": exp_date_obj.isoformat(), "user_id": user_id,
+                   "key_type": key_type, "invoice_number": invoice_number})
         broadcaster.publish("account_created", {
             "account_id": account.account_id,
             "status": account.status,
@@ -220,6 +229,8 @@ def ui_edit_account(
     status: str = Form(...),
     expiration_date: str = Form(...),
     credits: int = Form(...),
+    key_type: str = Form("particulares"),
+    invoice_number: Optional[int] = Form(None),
     db: Session = Depends(get_db),
     admin: str = Depends(get_current_admin_cookie),
 ):
@@ -234,12 +245,15 @@ def ui_edit_account(
         pass
     account.status = status
     account.credits = credits
+    account.key_type = key_type
+    account.invoice_number = invoice_number if key_type == "ticket_carga" else None
     db.commit()
     db.refresh(account)
     log_audit(db, "card.edited", "admin",
               f"Tarjeta editada: {account_id} — estado={status}, créditos={credits}",
               {"account_id": account_id, "status": status, "credits": credits,
-               "expiration_date": account.expiration_date.isoformat()})
+               "expiration_date": account.expiration_date.isoformat(),
+               "key_type": key_type, "invoice_number": account.invoice_number})
 
     if request.headers.get("HX-Request") and account.user_id:
         user, accounts = _user_with_accounts(db, account.user_id)

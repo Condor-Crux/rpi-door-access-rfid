@@ -22,6 +22,8 @@ class Account(BaseModel):
     expiration_date: datetime.datetime
     credits: int
     user_id: Optional[int] = None
+    key_type: str = "particulares"
+    invoice_number: Optional[int] = None
 
 class AccessLog(BaseModel):
     id: Optional[int] = None
@@ -38,6 +40,8 @@ class AccountDetail(BaseModel):
     expiration_date: datetime.datetime
     credits: int
     user_id: Optional[int] = None
+    key_type: str = "particulares"
+    invoice_number: Optional[int] = None
 
 class UserDetail(BaseModel):
     id: int
