@@ -43,13 +43,6 @@
                         Administración
                     </button>
                     #}
-                    <button @click="switchTab('logs')"
-                            class="px-4 py-4 text-sm font-semibold border-b-2 transition-colors"
-                            :class="activeTab === 'logs'
-                                ? 'border-white text-white'
-                                : 'border-transparent text-sky-200 hover:text-white hover:border-sky-300'">
-                        Logs
-                    </button>
                 </nav>
             </div>
 
@@ -74,14 +67,6 @@
         <!-- Tab 3: Datos -->
         <div x-show="activeTab === 'datos'" x-cloak>
             {% include "_tab_data.html" %}
-        </div>
-
-        <!-- Tab 4: Logs — lazy loaded on first reveal -->
-        <div x-show="activeTab === 'logs'" x-cloak
-             hx-get="/ui/logs"
-             hx-trigger="intersect once"
-             hx-swap="innerHTML">
-            <div class="flex items-center justify-center py-20 text-slate-400 text-sm">Cargando logs...</div>
         </div>
 
     </main>
