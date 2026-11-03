@@ -2,12 +2,21 @@
 {% block title %}Parador Km1151 — Duchas{% endblock %}
 
 {% block body %}
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.store('rfid', { pendingUid: '' });
+});
+</script>
+
 <div class="min-h-screen"
      x-data="{
          activeTab: 'dashboard',
          selectedUserId: null,
          switchTab(tab) { this.activeTab = tab; }
      }">
+
+    <!-- SSE proxy for new-card detection (outside dashboard scope) -->
+    <div hx-ext="sse" sse-connect="/sse/events" sse-swap="new_card" hx-swap="innerHTML" style="display:none"></div>
 
     <header class="bg-sky-700 shadow-md sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
@@ -34,6 +43,7 @@
                             hx-trigger="click[activeTab!='usuarios'] once">
                         Usuarios
                     </button>
+                    {# LEGACY — pestaña "Administración" oculta, no se usa en esta iteración
                     <button @click="switchTab('datos')"
                             class="px-4 py-4 text-sm font-semibold border-b-2 transition-colors"
                             :class="activeTab === 'datos'
@@ -41,13 +51,7 @@
                                 : 'border-transparent text-sky-200 hover:text-white hover:border-sky-300'">
                         Administración
                     </button>
-                    <button @click="switchTab('logs')"
-                            class="px-4 py-4 text-sm font-semibold border-b-2 transition-colors"
-                            :class="activeTab === 'logs'
-                                ? 'border-white text-white'
-                                : 'border-transparent text-sky-200 hover:text-white hover:border-sky-300'">
-                        Logs
-                    </button>
+                    #}
                 </nav>
             </div>
 
@@ -72,14 +76,6 @@
         <!-- Tab 3: Datos -->
         <div x-show="activeTab === 'datos'" x-cloak>
             {% include "_tab_data.html" %}
-        </div>
-
-        <!-- Tab 4: Logs — lazy loaded on first reveal -->
-        <div x-show="activeTab === 'logs'" x-cloak
-             hx-get="/ui/logs"
-             hx-trigger="intersect once"
-             hx-swap="innerHTML">
-            <div class="flex items-center justify-center py-20 text-slate-400 text-sm">Cargando logs...</div>
         </div>
 
     </main>
